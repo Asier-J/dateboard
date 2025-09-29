@@ -25,7 +25,7 @@ END {
   sample = sprintf(fmt, "", "", "")
   total = length(sample)
 
-  title = " CALENDARIO "
+  title = " UPCOMING WORK "
   tlen = length(title)
   left = int((total - tlen) / 2)
   right = total - tlen - left
