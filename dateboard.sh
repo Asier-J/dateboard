@@ -1,25 +1,8 @@
 #!/usr/bin/env bash
 export LC_ALL=en_US.UTF-8   #to ensure the accents are being dealt with properly
-file="${2:-/path/to/your/file}"
-
-case $1 in
-	"-a")
-		while true; do
-			read -e -p "Date (YYYY-MM-DD): " date
-			if [[ $date =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
-				break
-			else
-				echo "Incorrect format."
-			fi
-		done
-		read -e -p "Assignment: " assignment
-		read -e -p "Subject: " subject
-		line="$date - $assignment - $subject"
-		(cat "$file"; echo "$line") | sort -t'-' -k1,1 -k2,2 -k3,3 > "${file}.tmp"
-		mv "${file}.tmp" "$file"
-	;;
-	*)
-		awk -F" - " '
+file="${2:-path/to/your/file}"
+print(){
+	awk -F" - " '
 		function trim(s) { sub(/^[ \t\r\n]+/, "", s); sub(/[ \t\r\n]+$/, "", s); return s }
 
 		{
@@ -54,5 +37,23 @@ case $1 in
 		  for (i = 1; i <= NR; i++) printf fmt, a1[i], a2[i], a3[i]
 		}
 		' "$file"
+	}
+case $1 in
+	"-a")
+		while true; do
+			read -e -p "Date (YYYY-MM-DD): " date
+			if [[ $date =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+				break
+			else
+				echo "Incorrect format."
+			fi
+		done
+		read -e -p "Assignment: " assignment
+		read -e -p "Subject: " subject
+		line="$date - $assignment - $subject"
+		(cat "$file"; echo "$line") | sort -t'-' -k1,1 -k2,2 -k3,3 > "${file}.tmp"
+		mv "${file}.tmp" "$file"
+		echo "Workload added successfully!"
 	;;
 esac
+print
