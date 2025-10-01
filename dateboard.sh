@@ -55,5 +55,20 @@ case $1 in
 		mv "${file}.tmp" "$file"
 		echo "Workload added successfully!"
 	;;
+	"-r")
+		cat -n "$file"
+		while true; do
+			read -p "Select the number of the workload you wish to delete: " delete
+			if [[ $delete =~ ^[0-9]$ ]]; then
+				sed -i "${delete}d" "$file"
+				echo "Workload deleted successfully!"
+				break
+			else
+				echo "Incorrect format"
+			fi
+		done
+
+	;;
+
 esac
 print
