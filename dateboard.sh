@@ -69,6 +69,28 @@ case $1 in
 		done
 
 	;;
-
+	"-e")
+		cat -n "$file"
+		while true; do
+			read -p "Select the number of the workload you wish to edit: " edit
+			if [[ $edit =~ ^[0-9]$ ]]; then
+				while true; do
+					read -e -p "Date (YYYY-MM-DD): " date
+					if [[ $date =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+						break
+					else
+						echo "Incorrect format."
+					fi
+				done
+				read -e -p "Assignment: " assignment
+				read -e -p "Subject: " subject
+				line="$date - $assignment - $subject"
+				sed -i "${edit}c\\${line}" "$file"
+				echo "Workload edited successfully!"
+				break
+			else
+				echo "Incorrect format"
+			fi
+		done
 esac
 print
