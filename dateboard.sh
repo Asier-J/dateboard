@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 export LC_ALL=en_US.UTF-8   #to ensure the accents are being dealt with properly
 file="${2:-path/to/your/file}"
+info_file="${3:-path/to/your/file}"
 print(){
 	awk -F" - " '
 		function trim(s) { sub(/^[ \t\r\n]+/, "", s); sub(/[ \t\r\n]+$/, "", s); return s } #trimming
@@ -54,6 +55,7 @@ case $1 in #handle user options
 		(cat "$file"; echo "$line") | sort -t'-' -k1,1 -k2,2 -k3,3 > "${file}.tmp" #create a tmp file with the new line and sort it by date
 		mv "${file}.tmp" "$file" #update real file
 		echo "Workload added successfully!"
+		print	
 	;;
 	#Warning: both -r and -e accept any number input, but only valid line numbers will make changes
 	"-r") #remove
@@ -68,7 +70,7 @@ case $1 in #handle user options
 				echo "Incorrect format"
 			fi
 		done
-
+		print
 	;;
 	"-e") #edit
 		cat -n "$file"
@@ -93,19 +95,37 @@ case $1 in #handle user options
 				echo "Incorrect format"
 			fi
 		done
+		print
 	;;
 	"-h") #help
 		cat <<EOF
 Dateboard displays your workload from a .txt file.
 Format: Date (YYYY-MM-DD) | Assignment | Subject
 Options:
+	-h -> prints help menu
 	-a -> adds a new line
 	-e -> select and edit a line (full edit required)
 	-r -> select and remove a line
+	-i -> select and show information about a line
 
 Current workload:
 		
 EOF
+		print #show final result
+	;;
+	"-i")
+		cat -n "$file"
+		while true; do
+			read -p "Select the number of the workload you wish to know more about: " info
+			if [[ $info =~ ^[0-9]+$ ]]; then
+				sed -n "${info}p" "$info_file" #print the line
+				break			
+			else
+				echo "Incorrect format"
+			fi
+		done
+	;;
+	*)
+		print
 	;;
 esac
-print #show final result
