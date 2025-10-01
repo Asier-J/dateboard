@@ -93,5 +93,19 @@ case $1 in #handle user options
 				echo "Incorrect format"
 			fi
 		done
+	;;
+	"-h") #help
+		cat <<EOF
+Dateboard displays your workload from a .txt file.
+Format: Date (YYYY-MM-DD) | Assignment | Subject
+Options:
+	-a -> adds a new line
+	-e -> select and edit a line (full edit required)
+	-r -> select and remove a line
+
+Current workload:
+		
+EOF
+	;;
 esac
 print #show final result
