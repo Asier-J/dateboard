@@ -51,11 +51,14 @@ Options:
 	-e -> select and edit a line (full edit required)
 	-r -> select and remove a line
 	-i -> select and show information about a line
+	-c -> select and edit information about a line
 
 Current workload:
 		
 EOF
 }
+
+validate_not_empty() { [[ -n "$1" ]]; }
 
 validate_number(){ [[ $1 =~ ^[0-9]+$ ]]; }
 
@@ -63,19 +66,38 @@ validate_date() { [[ $1 =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; }
 
 read_task(){
 	while true; do
-		read -e -p "Date (YYYY-MM-DD): " date
-		validate_date "$date" && break
-		echo "Incorrect format."
+		read -e -p "Date (YYYY-MM-DD): " date	
+		if validate_not_empty "$date"; then
+			if validate_date "$date"; then
+				break
+			else
+				echo "Incorrect format, try again." >&2 #the output is captured by $line. redirect to stderr needed
+			fi
+		else
+			echo "Date can't be empty, try again." >&2
+		fi
 	done
-	read -e -p "Assignment: " assignment
-	read -e -p "Subject: " subject
+	while true; do
+		read -e -p "Assignment: " assignment
+		validate_not_empty "$assignment" && break
+		echo "Assignment can't be empty, try again." >&2
+	done
+	while true; do
+		read -e -p "Subject: " subject
+		validate_not_empty "$subject" && break
+		echo "Subject can't be empty, try again." >&2
+	done
 	echo "$date - $assignment - $subject"
 }
 
 select_line(){
 	local prompt=$1
+	while true; do
+		validate_not_empty "$prompt" && break
+		read -e -p "Line selected can't be empty. Retry or quit (C-c): "
+	done
 	local selected
-		while true; do
+	while true; do
 		read -p "$prompt" selected
 		if validate_number "$selected"; then
 			total_lines=$(wc -l < "$file")
@@ -115,7 +137,6 @@ case $1 in #handle user options
 		line=$(read_task)
 		sed -i "${edit}c\\${line}" "$file" #edit correct line
 		echo "Workload edited successfully!"
-		print
 	;;
 
 	"-r") #remove
@@ -132,21 +153,21 @@ case $1 in #handle user options
 		info=$(select_line "Select the number of the workload you wish to know more about: ")
 		sed -n "${info}p" "$info_file" #print the line
 	;;
-	"-ei") #edit info
+	"-c") #change (info)
 
 		cat -n "$file"
 		edit=$(select_line "Select the number of the workload you wish to check info about: ")
-		sed -n "${edit}p" "$info_file" #print the line
+		sed -n "${edit}p" "$info_file"	
 		read -p "Do you wish to edit this information (Y/n)? " decision
 		decision=${decision,,}
 		if [[ "$decision" == "y" || "$decision" == "" ]]; then
 			read -e -p "Write the new information: " line
-			echo "$edit"
-			echo "$line"
 			sed -i "${edit}c\\${line}" "$info_file" #edit
-			sed -n "${info}p" "$info_file"
+			echo "Option added successfully!"
+			print
+			exit 0
 		elif [[ "$decision" == "n" ]]; then
-			echo "adios"
+			print
 			exit 0
 		else
 			echo "Incorrect option."
