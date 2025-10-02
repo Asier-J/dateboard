@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 export LC_ALL=en_US.UTF-8   #to ensure the accents are being dealt with properly
 file="${2:-path/to/workload}"
-info_file="${3:-path/to/workload-info}"
+info_file="${3:-path/to/workload_info}"
 
 print(){
 	awk -F" - " '
@@ -99,8 +99,11 @@ case $1 in #handle user options
 
 	"-a") #add
 		line=$(read_task)
+		read -e -p "Add info: " info
 		(cat "$file"; echo "$line") | sort -t'-' -k1,1 -k2,2 -k3,3 > "${file}.tmp" #create a tmp file with the new line and sort it by date
 		mv "${file}.tmp" "$file" #update real file
+		line_num=$(grep -Fn "$line" "${file}" | head -1 | cut -d: -f1)
+		sed -i "${line_num}i${info}" "$info_file"
 		echo "Workload added successfully!"
 		print	
 	;;
@@ -119,6 +122,7 @@ case $1 in #handle user options
 		cat -n "$file"
 		delete=$(select_line "Select the number of the workload you wish to delete: ")
 		sed -i "${delete}d" "$file" #delete the line
+		sed -i "${delete}d" "$info_file"
 		echo "Workload deleted successfully!"
 		print
 	;;
@@ -128,7 +132,26 @@ case $1 in #handle user options
 		info=$(select_line "Select the number of the workload you wish to know more about: ")
 		sed -n "${info}p" "$info_file" #print the line
 	;;
+	"-ei") #edit info
 
+		cat -n "$file"
+		edit=$(select_line "Select the number of the workload you wish to check info about: ")
+		sed -n "${edit}p" "$info_file" #print the line
+		read -p "Do you wish to edit this information (Y/n)? " decision
+		decision=${decision,,}
+		if [[ "$decision" == "y" || "$decision" == "" ]]; then
+			read -e -p "Write the new information: " line
+			echo "$edit"
+			echo "$line"
+			sed -i "${edit}c\\${line}" "$info_file" #edit
+			sed -n "${info}p" "$info_file"
+		elif [[ "$decision" == "n" ]]; then
+			echo "adios"
+			exit 0
+		else
+			echo "Incorrect option."
+		fi
+	;;
 	*) #standard, empty input
 		print
 	;;
