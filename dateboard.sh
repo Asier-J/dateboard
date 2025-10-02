@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 export LC_ALL=en_US.UTF-8   #to ensure the accents are being dealt with properly
-file="${2:-path/to/workload}"
-info_file="${3:-path/to/workload_info}"
+file="${2:-path/to/your/workload}"
+info_file="${3:-path/to/your/workload/info}"
 
 print(){
 	awk -F" - " '
@@ -52,6 +52,7 @@ Options:
 	-r -> select and remove a line
 	-i -> select and show information about a line
 	-c -> select and edit information about a line
+	-p -> prints all info
 
 Current workload:
 		
@@ -91,26 +92,24 @@ read_task(){
 }
 
 select_line(){
-	local prompt=$1
 	while true; do
-		validate_not_empty "$prompt" && break
-		read -e -p "Line selected can't be empty. Retry or quit (C-c): "
-	done
-	local selected
-	while true; do
-		read -p "$prompt" selected
-		if validate_number "$selected"; then
-			total_lines=$(wc -l < "$file")
-			if [[ $selected -gt $total_lines || $selected -lt 1 ]]; then
-				echo "Line $selected does not exist."
-				continue
+		read -e -p "Select the line: " selected
+		if validate_not_empty "$selected"; then
+			if validate_number "$selected"; then
+				total_lines=$(wc -l < "$file")
+				if [[ $selected -ge 1 && $selected -le $total_lines ]]; then
+					break
+				else
+					echo "Line $selected does not exist." >&2
+				fi
+			else
+				echo "Incorrect format." >&2
 			fi
-			echo "$selected"
-			return 0
 		else
-			echo "Incorrect format."
+			echo "Line can't be empty, try again." >&2
 		fi
 	done
+	echo "$selected"
 }
 
 case $1 in #handle user options
@@ -122,6 +121,7 @@ case $1 in #handle user options
 	"-a") #add
 		line=$(read_task)
 		read -e -p "Add info: " info
+		info="${info:-Additional info not added.}"
 		(cat "$file"; echo "$line") | sort -t'-' -k1,1 -k2,2 -k3,3 > "${file}.tmp" #create a tmp file with the new line and sort it by date
 		mv "${file}.tmp" "$file" #update real file
 		line_num=$(grep -Fn "$line" "${file}" | head -1 | cut -d: -f1)
@@ -133,7 +133,7 @@ case $1 in #handle user options
 	#Warning: both -r and -e accept any number input, but only valid line numbers will make changes
 	"-e") #edit
 		cat -n "$file"
-		edit=$(select_line "Select the number of the workload you wish to edit: ")
+		edit=$(select_line)
 		line=$(read_task)
 		sed -i "${edit}c\\${line}" "$file" #edit correct line
 		echo "Workload edited successfully!"
@@ -172,6 +172,9 @@ case $1 in #handle user options
 		else
 			echo "Incorrect option."
 		fi
+	;;
+	"-p") #print info
+		cat -n "$info_file"
 	;;
 	*) #standard, empty input
 		print
